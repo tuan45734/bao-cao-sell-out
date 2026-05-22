@@ -314,12 +314,17 @@ async function searchKPI() {
     dataInfo.style.display = 'none';
 
     try {
-        console.log('🔄 Đang tải dữ liệu nhân viên và nhóm...');
-        await Promise.all([fetchEmployees(), fetchGroups()]);
-        console.log('⏳ Đợi 2 giây trước khi gọi API KPI...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        console.log('🔄 Đang tải dữ liệu KPI...');
+        console.log('🔄 Đang tải dữ liệu nhân viên...');
+        await fetchEmployees();
+        console.log('⏳ Đợi 1 giây trước khi gọi API tiếp theo...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
+        console.log('🔄 Đang tải dữ liệu nhóm...');
+        await fetchGroups();
+        console.log('⏳ Đợi 1 giây trước khi gọi API KPI...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
+
+        console.log('🔄 Đang tải dữ liệu KPI...');
         const url = `https://openapi.mobiwork.vn/OpenAPI/V1/KPI?thang=${month}&nam=${year}`;
         const response = await fetch(url, {
             method: 'GET',
@@ -379,18 +384,21 @@ async function initializeAndFetchKPI() {
     loading.classList.add('active');
 
     try {
-        console.log('🔄 Đang tải dữ liệu nhân viên và nhóm...');
-        await Promise.all([fetchEmployees(), fetchGroups()]);
+        console.log('🔄 Đang tải dữ liệu nhân viên...');
+        await fetchEmployees();
+        console.log('⏳ Đợi 1 giây trước khi gọi API tiếp theo...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
-        console.log('⏳ Đợi 2 giây trước khi gọi API KPI...');
-        await new Promise(resolve => setTimeout(resolve, 2000));
+        console.log('🔄 Đang tải dữ liệu nhóm...');
+        await fetchGroups();
+        console.log('⏳ Đợi 1 giây trước khi gọi API KPI...');
+        await new Promise(resolve => setTimeout(resolve, 1000));
 
         const month = document.getElementById('month').value;
         const year = document.getElementById('year').value;
         const auth = document.getElementById('auth').value;
 
         console.log(`🔄 Đang tải dữ liệu KPI tháng ${month}/${year}...`);
-
         const url = `https://openapi.mobiwork.vn/OpenAPI/V1/KPI?thang=${month}&nam=${year}`;
         const response = await fetch(url, {
             method: 'GET',
