@@ -46,13 +46,14 @@ function setAccountFilters(activeKV, activeClass, isAdmin, selector, containerEl
         btn.classList.remove(activeClass);
         btn.disabled = false;
         btn.style.opacity = '';
+        btn.style.cursor = '';
 
-        if (!isAdmin && btnKV !== activeKV) {
+        if (!isAdmin) {
+            // Tài khoản KV: vô hiệu hóa hoàn toàn tất cả nút sub-filter
             btn.disabled = true;
             btn.style.opacity = '0.55';
-        }
-
-        if (btnKV === activeKV) {
+            btn.style.cursor = 'not-allowed';
+        } else if (btnKV === activeKV) {
             btn.classList.add(activeClass);
         }
     });
@@ -66,6 +67,7 @@ function getEffectiveFilter(filterValue) {
 
 function updateFilterUI() {
     const effectiveKV = getEffectiveFilter(currentKVFilter);
+    const isAdmin = currentAccountRole === 'ADMIN';
 
     const regionFilter = document.getElementById('kvFilter');
     if (regionFilter) {
@@ -74,25 +76,20 @@ function updateFilterUI() {
             if (btn.dataset.filter === currentRegionFilter) {
                 btn.classList.add('active');
             }
-            if (currentAccountRole !== 'ADMIN') {
-                const btnRegion = btn.dataset.filter;
-                const regionKVs = REGION_MAP[btnRegion];
-                if (btnRegion === 'all') {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.55';
-                } else if (regionKVs && regionKVs.length > 0) {
-                    const hasAccess = regionKVs.includes(currentAccountKV);
-                    btn.disabled = !hasAccess;
-                    btn.style.opacity = hasAccess ? '' : '0.55';
-                } else {
-                    btn.disabled = true;
-                    btn.style.opacity = '0.55';
-                }
+            if (!isAdmin) {
+                // Tài khoản KV: vô hiệu hóa hoàn toàn tất cả nút bộ lọc
+                btn.disabled = true;
+                btn.style.opacity = '0.55';
+                btn.style.cursor = 'not-allowed';
+            } else {
+                btn.disabled = false;
+                btn.style.opacity = '';
+                btn.style.cursor = '';
             }
         });
     }
 
-    setAccountFilters(effectiveKV, 'active', currentAccountRole === 'ADMIN', '.kv-sub-filter');
+    setAccountFilters(effectiveKV, 'active', isAdmin, '.kv-sub-filter');
 }
 
 function applyAccountAccess(role, kv) {
