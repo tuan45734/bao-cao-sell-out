@@ -98,3 +98,4 @@ let hasDataLabelsPlugin = false;
 let currentTopKVFilter = 'all';
 let currentBottomKVFilter = 'all';
 let currentKVFilter = 'all';
+let currentRegionFilter = 'all';

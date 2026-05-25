@@ -154,16 +154,13 @@
                             📊 Tổng doanh thu: <strong id="totalRevenueAll">0</strong>
                         </div>
 
-                        <div class="kv-filter">
-                            <button class="kv-btn active" data-kv="all" onclick="filterAreaRevenue('all', event)">Tất Cả</button>
-                            <button class="kv-btn" data-kv="KV1" onclick="filterAreaRevenue('KV1', event)">KV1</button>
-                            <button class="kv-btn" data-kv="KV2" onclick="filterAreaRevenue('KV2', event)">KV2</button>
-                            <button class="kv-btn" data-kv="KV3" onclick="filterAreaRevenue('KV3', event)">KV3</button>
-                            <button class="kv-btn" data-kv="KV4" onclick="filterAreaRevenue('KV4', event)">KV4</button>
-                            <button class="kv-btn" data-kv="KV5" onclick="filterAreaRevenue('KV5', event)">KV5</button>
-                            <button class="kv-btn" data-kv="KV6" onclick="filterAreaRevenue('KV6', event)">KV6</button>
-                            <button class="kv-btn" data-kv="KV7" onclick="filterAreaRevenue('KV7', event)">KV7</button>
+                        <div class="kv-filter" id="kvFilter">
+                            <button class="kv-btn active" data-filter="all" onclick="filterAreaRegion('all', event)">Tất cả</button>
+                            <button class="kv-btn" data-filter="north" onclick="filterAreaRegion('north', event)">Miền Bắc</button>
+                            <button class="kv-btn" data-filter="central" onclick="filterAreaRegion('central', event)">Miền Trung</button>
+                            <button class="kv-btn" data-filter="south" onclick="filterAreaRegion('south', event)">Miền Nam</button>
                         </div>
+                        <div class="kv-sub-filter" id="kvSubFilter" style="display: none;"></div>
 
                         <div class="chart-wrapper pie-chart" style="height: 600px;">
                             <canvas id="areaRevenueChart"></canvas>

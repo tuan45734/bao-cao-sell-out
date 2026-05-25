@@ -76,7 +76,33 @@ function updateFilterUI() {
     if (employeeFilters.length > 1) {
         setAccountFilters(bottomKV, 'bottom-active', currentAccountRole === 'ADMIN', null, employeeFilters[1]);
     }
-    setAccountFilters(areaKV, 'active', currentAccountRole === 'ADMIN', '.kv-filter');
+
+    const regionFilter = document.getElementById('kvFilter');
+    if (regionFilter) {
+        regionFilter.querySelectorAll('.kv-btn').forEach(btn => {
+            btn.classList.remove('active');
+            if (btn.dataset.filter === currentRegionFilter) {
+                btn.classList.add('active');
+            }
+            if (currentAccountRole !== 'ADMIN') {
+                const btnRegion = btn.dataset.filter;
+                const regionKVs = REGION_MAP[btnRegion];
+                if (btnRegion === 'all') {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.55';
+                } else if (regionKVs && regionKVs.length > 0) {
+                    const hasAccess = regionKVs.includes(currentAccountKV);
+                    btn.disabled = !hasAccess;
+                    btn.style.opacity = hasAccess ? '' : '0.55';
+                } else {
+                    btn.disabled = true;
+                    btn.style.opacity = '0.55';
+                }
+            }
+        });
+    }
+
+    setAccountFilters(areaKV, 'active', currentAccountRole === 'ADMIN', '.kv-sub-filter');
 }
 
 function applyAccountAccess(role, kv) {
@@ -89,6 +115,7 @@ function applyAccountAccess(role, kv) {
     currentTopKVFilter = defaultKV;
     currentBottomKVFilter = defaultKV;
     currentKVFilter = defaultKV;
+    currentRegionFilter = 'all';
 
     updateFilterUI();
 
@@ -159,7 +186,7 @@ function createCharts(data) {
     createBottomAreaChart(data);
 
     if (effectiveAreaKV === 'all') {
-        createAreaRevenueChart(data);
+        createAreaRevenueChart(data, currentRegionFilter);
     } else {
         createNPPChartByKV(data, effectiveAreaKV);
     }
