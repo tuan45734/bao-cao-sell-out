@@ -150,6 +150,19 @@ function filterDataByKVRegion(data, kvExtractor) {
     return data;
 }
 
+function moveAreaChartToTop() {
+    const areaChart = document.getElementById('areaRevenueChart');
+    const reportSection = document.getElementById('reportSection');
+    if (!areaChart || !reportSection) return;
+
+    const areaChartContainer = areaChart.closest('.charts-container');
+    const firstChartContainer = reportSection.querySelector('.charts-container');
+
+    if (areaChartContainer && firstChartContainer && areaChartContainer !== firstChartContainer) {
+        reportSection.insertBefore(areaChartContainer, firstChartContainer);
+    }
+}
+
 function createCharts(data) {
     console.log('🔄 Đang vẽ biểu đồ...');
 
@@ -458,6 +471,7 @@ document.addEventListener('DOMContentLoaded', function () {
     const today = new Date();
     document.getElementById('month').value = today.getMonth() + 1;
     document.getElementById('year').value = today.getFullYear();
+    moveAreaChartToTop();
     console.log('🚀 Ứng dụng đã sẵn sàng!');
 
     // Khởi tạo Chat AI
@@ -469,3 +483,4 @@ document.addEventListener('DOMContentLoaded', function () {
         initializeAndFetchKPI();
     }, 1000);
 });
+
