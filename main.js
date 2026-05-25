@@ -20,7 +20,7 @@ const accessCodeMap = {
     KV4YXY: 'KV4',
     KV5XXZ: 'KV5',
     KV6XBC: 'KV6',
-    KV7ABC: 'KV7',
+    KV7ZZA: 'KV7',
     99: 'ADMIN'
 };
 
