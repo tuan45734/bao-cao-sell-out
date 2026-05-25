@@ -95,7 +95,5 @@ let allData = null;
 let employeeMap = new Map();
 let groupMap = new Map();
 let hasDataLabelsPlugin = false;
-let currentTopKVFilter = 'all';
-let currentBottomKVFilter = 'all';
 let currentKVFilter = 'all';
 let currentRegionFilter = 'all';

@@ -35,9 +35,6 @@ function filterAreaRegion(region, event) {
 
     if (!currentData) return;
 
-    const nppRevenueData = calculateNPPRevenue(currentData);
-    updateTotalRevenueFromNPP(nppRevenueData);
-
     const chartCard = document.getElementById('areaRevenueChart')?.closest('.chart-card');
     if (!chartCard) return;
 
@@ -49,14 +46,12 @@ function filterAreaRegion(region, event) {
     chartCard.appendChild(loadingDiv);
 
     setTimeout(() => {
-        const titleElement = chartCard.querySelector('h3');
-        if (region === 'all') {
-            createAreaRevenueChart(currentData);
-        } else if (region === 'south') {
+        if (region === 'south') {
+            const titleElement = chartCard.querySelector('h3');
             if (titleElement) titleElement.innerHTML = '🥧 Tỷ lệ hoàn thành KPI - Miền Nam';
             showEmptyChart('Chưa có dữ liệu Miền Nam');
         } else {
-            createAreaRevenueChart(currentData, region);
+            createCharts(currentData);
         }
 
         const loadingEl = chartCard.querySelector('.kv-loading');
@@ -173,7 +168,6 @@ function createAreaRevenueChart(data, regionFilter) {
         });
     });
 
-    updateTotalRevenueFromNPP(nppRevenueData);
     kvData.sort((a, b) => b.completionRate - a.completionRate);
 
     const labels = kvData.map(item => getGroupName(item.kv) || item.kv);
@@ -405,9 +399,6 @@ function filterAreaRevenue(kv, event) {
     currentKVFilter = kv;
     if (!currentData) return;
 
-    const nppRevenueData = calculateNPPRevenue(currentData);
-    updateTotalRevenueFromNPP(nppRevenueData);
-
     const chartCard = document.getElementById('areaRevenueChart')?.closest('.chart-card');
     if (!chartCard) return;
 
@@ -419,11 +410,7 @@ function filterAreaRevenue(kv, event) {
     chartCard.appendChild(loadingDiv);
 
     setTimeout(() => {
-        if (kv === 'all') {
-            createAreaRevenueChart(currentData, currentRegionFilter);
-        } else {
-            createNPPChartByKV(currentData, kv);
-        }
+        createCharts(currentData);
 
         const loadingEl = chartCard.querySelector('.kv-loading');
         if (loadingEl) loadingEl.remove();

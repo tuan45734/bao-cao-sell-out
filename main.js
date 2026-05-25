@@ -65,17 +65,7 @@ function getEffectiveFilter(filterValue) {
 }
 
 function updateFilterUI() {
-    const topKV = getEffectiveFilter(currentTopKVFilter);
-    const bottomKV = getEffectiveFilter(currentBottomKVFilter);
-    const areaKV = getEffectiveFilter(currentKVFilter);
-
-    const employeeFilters = document.querySelectorAll('.kv-filter-employee');
-    if (employeeFilters.length > 0) {
-        setAccountFilters(topKV, 'top-active', currentAccountRole === 'ADMIN', null, employeeFilters[0]);
-    }
-    if (employeeFilters.length > 1) {
-        setAccountFilters(bottomKV, 'bottom-active', currentAccountRole === 'ADMIN', null, employeeFilters[1]);
-    }
+    const effectiveKV = getEffectiveFilter(currentKVFilter);
 
     const regionFilter = document.getElementById('kvFilter');
     if (regionFilter) {
@@ -102,7 +92,7 @@ function updateFilterUI() {
         });
     }
 
-    setAccountFilters(areaKV, 'active', currentAccountRole === 'ADMIN', '.kv-sub-filter');
+    setAccountFilters(effectiveKV, 'active', currentAccountRole === 'ADMIN', '.kv-sub-filter');
 }
 
 function applyAccountAccess(role, kv) {
@@ -112,8 +102,6 @@ function applyAccountAccess(role, kv) {
     const isAdmin = role === 'ADMIN';
     const defaultKV = isAdmin ? 'all' : kv || 'all';
 
-    currentTopKVFilter = defaultKV;
-    currentBottomKVFilter = defaultKV;
     currentKVFilter = defaultKV;
     currentRegionFilter = 'all';
 
@@ -146,6 +134,22 @@ function applyAccountAccess(role, kv) {
     }
 }
 
+function filterDataByKVRegion(data, kvExtractor) {
+    if (!data) return [];
+    const effectiveKV = getEffectiveFilter(currentKVFilter);
+    if (effectiveKV !== 'all') {
+        return data.filter(item => kvExtractor(item) === effectiveKV);
+    }
+    if (currentRegionFilter !== 'all') {
+        const allowedKVs = REGION_MAP[currentRegionFilter];
+        if (allowedKVs && allowedKVs.length > 0) {
+            return data.filter(item => allowedKVs.includes(kvExtractor(item)));
+        }
+        return [];
+    }
+    return data;
+}
+
 function createCharts(data) {
     console.log('🔄 Đang vẽ biểu đồ...');
 
@@ -163,32 +167,24 @@ function createCharts(data) {
     }
 
     const activeData = filterActiveEmployees(data);
-    const effectiveTopKV = getEffectiveFilter(currentTopKVFilter);
-    const effectiveBottomKV = getEffectiveFilter(currentBottomKVFilter);
-    const effectiveAreaKV = getEffectiveFilter(currentKVFilter);
+    const kvExtractor = (item) => findKVFromGroup(item.ma_kv || 'Khác');
 
-    const topFilteredData = effectiveTopKV === 'all'
-        ? activeData
-        : activeData.filter(item => findKVFromGroup(item.ma_kv || 'Khác') === effectiveTopKV);
+    const filteredActiveData = filterDataByKVRegion(activeData, kvExtractor);
+    const filteredAllData = filterDataByKVRegion(data, kvExtractor);
 
-    const bottomFilteredData = effectiveBottomKV === 'all'
-        ? activeData
-        : activeData.filter(item => findKVFromGroup(item.ma_kv || 'Khác') === effectiveBottomKV);
+    createTopCompletionChart(filteredActiveData);
+    createBottomCompletionChart(filteredActiveData);
 
-    currentTopKVFilter = effectiveTopKV;
-    currentBottomKVFilter = effectiveBottomKV;
-    currentKVFilter = effectiveAreaKV;
+    createTopAreaChart(filteredAllData);
+    createBottomAreaChart(filteredAllData);
 
-    createTopCompletionChart(topFilteredData, effectiveTopKV);
-    createBottomCompletionChart(bottomFilteredData, effectiveBottomKV);
+    const nppRevenueData = calculateNPPRevenue(data);
+    updateTotalRevenueFromNPP(nppRevenueData);
 
-    createTopAreaChart(data);
-    createBottomAreaChart(data);
-
-    if (effectiveAreaKV === 'all') {
+    if (currentKVFilter === 'all') {
         createAreaRevenueChart(data, currentRegionFilter);
     } else {
-        createNPPChartByKV(data, effectiveAreaKV);
+        createNPPChartByKV(data, currentKVFilter);
     }
     console.log(`✅ Đã vẽ xong biểu đồ (${activeData.length} nhân viên active / ${data.length} tổng số)`);
 }

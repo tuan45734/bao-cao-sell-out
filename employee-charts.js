@@ -1,6 +1,6 @@
 // ========== BIỂU ĐỒ NHÂN VIÊN ==========
 
-function createTopCompletionChart(data, kv = 'all') {
+function createTopCompletionChart(data) {
     if (!data || data.length === 0) {
         const ctx = document.getElementById('topCompletionChart').getContext('2d');
         if (topCompletionChart) topCompletionChart.destroy();
@@ -16,11 +16,14 @@ function createTopCompletionChart(data, kv = 'all') {
     if (chartCard) {
         const titleElement = chartCard.querySelector('h3');
         if (titleElement) {
-            if (kv === 'all') {
-                titleElement.innerHTML = '🏆 15 Nhân viên doanh số cao nhất';
-            } else {
-                const kvName = getGroupName(kv) || kv;
+            const effectiveKV = getEffectiveFilter(currentKVFilter);
+            if (effectiveKV !== 'all') {
+                const kvName = getGroupName(effectiveKV) || effectiveKV;
                 titleElement.innerHTML = `🏆 15 Nhân viên doanh số cao nhất - ${kvName}`;
+            } else if (currentRegionFilter !== 'all') {
+                titleElement.innerHTML = `🏆 15 Nhân viên doanh số cao nhất - ${REGION_LABELS[currentRegionFilter]}`;
+            } else {
+                titleElement.innerHTML = '🏆 15 Nhân viên doanh số cao nhất';
             }
         }
     }
@@ -145,7 +148,7 @@ function createTopCompletionChart(data, kv = 'all') {
     }
 }
 
-function createBottomCompletionChart(data, kv = 'all') {
+function createBottomCompletionChart(data) {
     if (!data || data.length === 0) {
         const ctx = document.getElementById('bottomCompletionChart').getContext('2d');
         if (bottomCompletionChart) bottomCompletionChart.destroy();
@@ -161,11 +164,14 @@ function createBottomCompletionChart(data, kv = 'all') {
     if (chartCard) {
         const titleElement = chartCard.querySelector('h3');
         if (titleElement) {
-            if (kv === 'all') {
-                titleElement.innerHTML = '⚠️ 15 Nhân viên doanh số thấp nhất';
-            } else {
-                const kvName = getGroupName(kv) || kv;
+            const effectiveKV = getEffectiveFilter(currentKVFilter);
+            if (effectiveKV !== 'all') {
+                const kvName = getGroupName(effectiveKV) || effectiveKV;
                 titleElement.innerHTML = `⚠️ 15 Nhân viên doanh số thấp nhất - ${kvName}`;
+            } else if (currentRegionFilter !== 'all') {
+                titleElement.innerHTML = `⚠️ 15 Nhân viên doanh số thấp nhất - ${REGION_LABELS[currentRegionFilter]}`;
+            } else {
+                titleElement.innerHTML = '⚠️ 15 Nhân viên doanh số thấp nhất';
             }
         }
     }
@@ -281,90 +287,3 @@ function createBottomCompletionChart(data, kv = 'all') {
     }
 }
 
-function filterTopEmployees(kv, event) {
-    const parentDiv = event.target.closest('.kv-filter-employee');
-    parentDiv.querySelectorAll('.kv-btn-employee').forEach(btn => {
-        btn.classList.remove('top-active');
-    });
-    event.target.classList.add('top-active');
-
-    currentTopKVFilter = kv;
-    if (!currentData) return;
-
-    const chartCard = event.target.closest('.chart-card');
-    showChartLoading(chartCard);
-
-    setTimeout(() => {
-        let activeData = filterActiveEmployees(currentData);
-        
-        let filteredData = activeData;
-        if (kv !== 'all') {
-            filteredData = activeData.filter(item => {
-                const itemKV = findKVFromGroup(item.ma_kv || 'Khác');
-                return itemKV === kv;
-            });
-        }
-
-        if (filteredData.length === 0) {
-            const fallbackKV = currentAccountRole === 'ADMIN' ? 'all' : (currentAccountKV || kv);
-            const fallbackData = fallbackKV === 'all'
-                ? filterActiveEmployees(currentData)
-                : filterActiveEmployees(currentData).filter(item => findKVFromGroup(item.ma_kv || 'Khác') === fallbackKV);
-
-            showToast(`Không có dữ liệu nhân viên đang hoạt động cho ${fallbackKV === 'all' ? 'Tất Cả' : fallbackKV}`);
-            parentDiv.querySelectorAll('.kv-btn-employee').forEach(btn => {
-                btn.classList.remove('top-active');
-            });
-            parentDiv.querySelector(`[data-kv="${fallbackKV}"]`).classList.add('top-active');
-            currentTopKVFilter = fallbackKV;
-            createTopCompletionChart(fallbackData, fallbackKV);
-        } else {
-            createTopCompletionChart(filteredData, kv);
-        }
-        hideChartLoading(chartCard);
-    }, 300);
-}
-
-function filterBottomEmployees(kv, event) {
-    const parentDiv = event.target.closest('.kv-filter-employee');
-    parentDiv.querySelectorAll('.kv-btn-employee').forEach(btn => {
-        btn.classList.remove('bottom-active');
-    });
-    event.target.classList.add('bottom-active');
-
-    currentBottomKVFilter = kv;
-    if (!currentData) return;
-
-    const chartCard = event.target.closest('.chart-card');
-    showChartLoading(chartCard);
-
-    setTimeout(() => {
-        let activeData = filterActiveEmployees(currentData);
-        
-        let filteredData = activeData;
-        if (kv !== 'all') {
-            filteredData = activeData.filter(item => {
-                const itemKV = findKVFromGroup(item.ma_kv || 'Khác');
-                return itemKV === kv;
-            });
-        }
-
-        if (filteredData.length === 0) {
-            const fallbackKV = currentAccountRole === 'ADMIN' ? 'all' : (currentAccountKV || kv);
-            const fallbackData = fallbackKV === 'all'
-                ? filterActiveEmployees(currentData)
-                : filterActiveEmployees(currentData).filter(item => findKVFromGroup(item.ma_kv || 'Khác') === fallbackKV);
-
-            showToast(`Không có dữ liệu nhân viên đang hoạt động cho ${fallbackKV === 'all' ? 'Tất Cả' : fallbackKV}`);
-            parentDiv.querySelectorAll('.kv-btn-employee').forEach(btn => {
-                btn.classList.remove('bottom-active');
-            });
-            parentDiv.querySelector(`[data-kv="${fallbackKV}"]`).classList.add('bottom-active');
-            currentBottomKVFilter = fallbackKV;
-            createBottomCompletionChart(fallbackData, fallbackKV);
-        } else {
-            createBottomCompletionChart(filteredData, kv);
-        }
-        hideChartLoading(chartCard);
-    }, 300);
-}
