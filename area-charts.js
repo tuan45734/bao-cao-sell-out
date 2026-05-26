@@ -13,6 +13,189 @@ const REGION_LABELS = {
     south: 'Miền Nam'
 };
 
+function handleNPPFilter(value) {
+    currentNPPFilter = value;
+    if (!currentData) return;
+
+    const chartCard = document.getElementById('areaRevenueChart')?.closest('.chart-card');
+    if (!chartCard) return;
+
+    const loadingDiv = document.createElement('div');
+    loadingDiv.className = 'kv-loading';
+    loadingDiv.innerHTML = '<div class="spinner-small"></div><p>Đang lọc dữ liệu...</p>';
+    loadingDiv.style.cssText = 'position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(255,255,255,0.9); padding: 20px; border-radius: 10px; z-index: 10;';
+    chartCard.style.position = 'relative';
+    chartCard.appendChild(loadingDiv);
+
+    setTimeout(() => {
+        createCharts(currentData);
+        const loadingEl = chartCard.querySelector('.kv-loading');
+        if (loadingEl) loadingEl.remove();
+    }, 300);
+}
+
+function populateNPPFilter() {
+    const nppFilter = document.getElementById('nppFilter');
+    const nppSelect = document.getElementById('nppSelect');
+    if (!nppSelect || !nppFilter) return;
+
+    if (currentKVFilter === 'all') {
+        nppFilter.style.display = 'none';
+        currentNPPFilter = 'all';
+        return;
+    }
+
+    nppFilter.style.display = 'flex';
+
+    const filteredNPPs = nppData.filter(npp => npp.kv === currentKVFilter);
+
+    nppSelect.innerHTML = '<option value="all">Tất cả NPP</option>';
+    filteredNPPs.forEach(npp => {
+        const option = document.createElement('option');
+        option.value = npp.ten;
+        option.textContent = npp.ten.replace(/^NPP\s+/i, '');
+        nppSelect.appendChild(option);
+    });
+
+    if (currentNPPFilter !== 'all' && filteredNPPs.some(npp => npp.ten === currentNPPFilter)) {
+        nppSelect.value = currentNPPFilter;
+    } else {
+        nppSelect.value = 'all';
+        currentNPPFilter = 'all';
+    }
+}
+
+function getEmployeesByNPP(data, nppName) {
+    const normalizedNPP = nppName.replace(/^NPP\s+/i, '').toLowerCase();
+    return data.filter(item => {
+        const maKV = item.ma_kv || '';
+        const normalizedMaKV = maKV.replace(/^NPP\s+/i, '').toLowerCase();
+        return normalizedMaKV.includes(normalizedNPP) || normalizedNPP.includes(normalizedMaKV);
+    });
+}
+
+function createSingleNPPChart(data, nppName) {
+    const employeeData = getEmployeesByNPP(data, nppName);
+
+    if (!employeeData || employeeData.length === 0) {
+        showEmptyChart(`Không có dữ liệu nhân viên cho ${nppName.replace(/^NPP\s+/i, '')}`);
+        return;
+    }
+
+    const activeEmployees = filterActiveEmployees(employeeData);
+    const displayData = activeEmployees.length > 0 ? activeEmployees : employeeData;
+
+    const chartData = displayData
+        .map(item => ({
+            maNV: item.ma_nv,
+            ten: getEmployeeName(item.ma_nv),
+            revenue: item.doanh_so?.th || 0,
+            target: item.doanh_so?.kh || 0,
+            completionRate: item.doanh_so?.kh > 0 ? (item.doanh_so.th / item.doanh_so.kh * 100) : 0
+        }))
+        .sort((a, b) => b.completionRate - a.completionRate);
+
+    const labels = chartData.map(item => item.ten || item.maNV);
+    const completionRates = chartData.map(item => item.completionRate);
+
+    const chartCard = document.getElementById('areaRevenueChart')?.closest('.chart-card');
+    if (chartCard) {
+        const titleElement = chartCard.querySelector('h3');
+        if (titleElement) {
+            const shortName = nppName.replace(/^NPP\s+/i, '');
+            titleElement.innerHTML = `👨‍💼 Nhân viên - ${shortName} (${chartData.length})`;
+        }
+    }
+
+    try {
+        const ctx = document.getElementById('areaRevenueChart').getContext('2d');
+        if (areaRevenueChart) areaRevenueChart.destroy();
+
+        const maxValue = Math.max(...completionRates, 0);
+        let maxAxis = Math.ceil((maxValue * 1.1) / 10) * 10;
+        if (maxValue > 80 && maxAxis < 100) maxAxis = 100;
+        if (maxAxis < 50) maxAxis = 50;
+
+        const config = {
+            type: 'bar',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'Tỷ lệ hoàn thành (%)',
+                    data: completionRates,
+                    backgroundColor: completionRates.map(rate => {
+                        if (rate >= 100) return 'rgba(76, 175, 80, 0.8)';
+                        if (rate >= 80) return 'rgba(33, 150, 243, 0.8)';
+                        if (rate >= 50) return 'rgba(255, 193, 7, 0.8)';
+                        return 'rgba(244, 67, 54, 0.8)';
+                    }),
+                    borderColor: 'white',
+                    borderWidth: 2,
+                    borderRadius: 5
+                }]
+            },
+            options: {
+                indexAxis: 'y',
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                        titleFont: { size: 14, weight: 'bold' },
+                        bodyFont: { size: 13 },
+                        padding: 12,
+                        callbacks: {
+                            label: function (context) {
+                                const index = context.dataIndex;
+                                const item = chartData[index];
+                                return [
+                                    `💰 Doanh số TH: ${formatNumber(item.revenue)}`,
+                                    `🎯 Kế hoạch: ${formatNumber(item.target)}`,
+                                    `📊 Tỷ lệ HT: ${item.completionRate.toFixed(1)}%`
+                                ];
+                            }
+                        }
+                    },
+                    datalabels: hasDataLabelsPlugin ? {
+                        display: true,
+                        anchor: 'end',
+                        align: 'end',
+                        offset: 5,
+                        color: '#333',
+                        font: { weight: 'bold', size: 11 },
+                        formatter: value => value.toFixed(1) + '%'
+                    } : {}
+                },
+                scales: {
+                    x: {
+                        beginAtZero: true,
+                        max: maxAxis,
+                        ticks: {
+                            callback: value => value + '%',
+                            stepSize: maxAxis > 100 ? 20 : 10
+                        },
+                        title: { display: true, text: 'Tỷ lệ hoàn thành (%)', font: { weight: 'bold' } }
+                    },
+                    y: {
+                        ticks: {
+                            font: { size: 12 },
+                            callback: function (value, index, values) {
+                                const label = this.getLabelForValue(value);
+                                return label && label.length > 25 ? label.substring(0, 22) + '...' : label;
+                            }
+                        }
+                    }
+                }
+            }
+        };
+
+        areaRevenueChart = new Chart(ctx, config);
+    } catch (error) {
+        console.error('❌ Lỗi vẽ biểu đồ nhân viên theo NPP:', error);
+    }
+}
+
 function filterAreaRegion(region, event) {
     const filterDiv = document.getElementById('kvFilter');
     filterDiv.querySelectorAll('.kv-btn').forEach(btn => btn.classList.remove('active'));
@@ -20,6 +203,7 @@ function filterAreaRegion(region, event) {
 
     currentRegionFilter = region;
     currentKVFilter = 'all';
+    currentNPPFilter = 'all';
 
     const subFilter = document.getElementById('kvSubFilter');
     if (region === 'all' || region === 'south') {
@@ -32,6 +216,8 @@ function filterAreaRegion(region, event) {
         });
         subFilter.style.display = 'flex';
     }
+
+    populateNPPFilter();
 
     if (!currentData) return;
 
@@ -106,26 +292,34 @@ function showEmptyChart(message) {
 function updateTotalRevenueFromNPP(nppRevenueData) {
     if (!nppRevenueData) return;
 
-    let relevantNPPs = nppRevenueData;
-    if (currentRegionFilter !== 'all' && currentKVFilter === 'all' && REGION_MAP[currentRegionFilter]) {
-        const regionKVs = REGION_MAP[currentRegionFilter];
-        relevantNPPs = nppRevenueData.filter(npp => regionKVs.includes(npp.kv));
-    }
-
     let totalActualRevenue = 0;
     let totalTarget = 0;
 
-    if (currentKVFilter === 'all') {
-        totalActualRevenue = relevantNPPs.reduce((sum, npp) => sum + npp.actualRevenue, 0);
-        totalTarget = getKVTargetFromNPP('all');
-        if (currentRegionFilter !== 'all' && REGION_MAP[currentRegionFilter]) {
-            const regionKVs = REGION_MAP[currentRegionFilter];
-            totalTarget = relevantNPPs.reduce((sum, npp) => sum + (npp.target || 0), 0);
+    if (currentNPPFilter !== 'all') {
+        const nppDatum = nppRevenueData.find(npp => npp.ten === currentNPPFilter);
+        if (nppDatum) {
+            totalActualRevenue = nppDatum.actualRevenue;
+            totalTarget = nppDatum.target;
         }
     } else {
-        const filteredNPPs = nppRevenueData.filter(npp => npp.kv === currentKVFilter);
-        totalActualRevenue = filteredNPPs.reduce((sum, npp) => sum + npp.actualRevenue, 0);
-        totalTarget = getKVTargetFromNPP(currentKVFilter);
+        let relevantNPPs = nppRevenueData;
+        if (currentRegionFilter !== 'all' && currentKVFilter === 'all' && REGION_MAP[currentRegionFilter]) {
+            const regionKVs = REGION_MAP[currentRegionFilter];
+            relevantNPPs = nppRevenueData.filter(npp => regionKVs.includes(npp.kv));
+        }
+
+        if (currentKVFilter === 'all') {
+            totalActualRevenue = relevantNPPs.reduce((sum, npp) => sum + npp.actualRevenue, 0);
+            totalTarget = getKVTargetFromNPP('all');
+            if (currentRegionFilter !== 'all' && REGION_MAP[currentRegionFilter]) {
+                const regionKVs = REGION_MAP[currentRegionFilter];
+                totalTarget = relevantNPPs.reduce((sum, npp) => sum + (npp.target || 0), 0);
+            }
+        } else {
+            const filteredNPPs = nppRevenueData.filter(npp => npp.kv === currentKVFilter);
+            totalActualRevenue = filteredNPPs.reduce((sum, npp) => sum + npp.actualRevenue, 0);
+            totalTarget = getKVTargetFromNPP(currentKVFilter);
+        }
     }
 
     const completionRate = totalTarget > 0 ? (totalActualRevenue / totalTarget * 100).toFixed(1) : 0;
@@ -397,6 +591,8 @@ function filterAreaRevenue(kv, event) {
     event.target.classList.add('active');
 
     currentKVFilter = kv;
+    currentNPPFilter = 'all';
+    populateNPPFilter();
     if (!currentData) return;
 
     const chartCard = document.getElementById('areaRevenueChart')?.closest('.chart-card');

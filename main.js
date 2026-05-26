@@ -90,6 +90,13 @@ function updateFilterUI() {
     }
 
     setAccountFilters(effectiveKV, 'active', isAdmin, '.kv-sub-filter');
+
+    const nppSelect = document.getElementById('nppSelect');
+    if (nppSelect) {
+        nppSelect.disabled = !isAdmin;
+        nppSelect.style.opacity = isAdmin ? '' : '0.55';
+        nppSelect.style.cursor = isAdmin ? '' : 'not-allowed';
+    }
 }
 
 function applyAccountAccess(role, kv) {
@@ -163,6 +170,7 @@ function moveAreaChartToTop() {
 function createCharts(data) {
     console.log('🔄 Đang vẽ biểu đồ...');
 
+    populateNPPFilter();
     updateFilterUI();
 
     if (topCompletionChart) topCompletionChart.destroy();
@@ -191,7 +199,9 @@ function createCharts(data) {
     const nppRevenueData = calculateNPPRevenue(data);
     updateTotalRevenueFromNPP(nppRevenueData);
 
-    if (currentKVFilter === 'all') {
+    if (currentNPPFilter !== 'all') {
+        createSingleNPPChart(data, currentNPPFilter);
+    } else if (currentKVFilter === 'all') {
         createAreaRevenueChart(data, currentRegionFilter);
     } else {
         createNPPChartByKV(data, currentKVFilter);

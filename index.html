@@ -139,6 +139,12 @@
                             <button class="kv-btn" data-filter="south" onclick="filterAreaRegion('south', event)">Miền Nam</button>
                         </div>
                         <div class="kv-sub-filter" id="kvSubFilter" style="display: none;"></div>
+                        <div class="npp-filter" id="nppFilter">
+                            <span class="npp-filter-label">🏢 NPP:</span>
+                            <select id="nppSelect" class="npp-select" onchange="handleNPPFilter(this.value)">
+                                <option value="all">Tất cả NPP</option>
+                            </select>
+                        </div>
 
                         <div class="chart-wrapper pie-chart" style="height: 600px;">
                             <canvas id="areaRevenueChart"></canvas>

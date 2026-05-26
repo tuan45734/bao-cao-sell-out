@@ -97,3 +97,4 @@ let groupMap = new Map();
 let hasDataLabelsPlugin = false;
 let currentKVFilter = 'all';
 let currentRegionFilter = 'all';
+let currentNPPFilter = 'all';
